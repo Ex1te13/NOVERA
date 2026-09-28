@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import ExcelJS from "exceljs";
 import { getAdminSession } from "@/lib/auth";
-import { db, type LeadRow } from "@/lib/db";
+import { dbAll, type LeadRow } from "@/lib/db";
 import { formatMoney } from "@/lib/calculator";
 
 const safeJson = <T,>(s: string | null, fb: T): T => {
@@ -14,7 +14,7 @@ const safeJson = <T,>(s: string | null, fb: T): T => {
 
 export async function GET() {
   if (!(await getAdminSession())) return NextResponse.json({ error: "auth" }, { status: 401 });
-  const rows = db.prepare("SELECT * FROM leads ORDER BY id DESC").all() as LeadRow[];
+  const rows = await dbAll<LeadRow>("SELECT * FROM leads ORDER BY id DESC");
 
   const wb = new ExcelJS.Workbook();
   wb.creator = "NOVERA";

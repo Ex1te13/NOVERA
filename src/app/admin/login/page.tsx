@@ -20,9 +20,10 @@ export default function LoginPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ login, password }),
     });
+    const data = (await res.json().catch(() => ({}))) as { error?: string };
     setBusy(false);
     if (!res.ok) {
-      setError("Неверный логин или пароль");
+      setError(data.error || "Неверный логин или пароль");
       return;
     }
     router.push("/admin");

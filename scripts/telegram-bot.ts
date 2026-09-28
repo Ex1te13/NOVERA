@@ -16,13 +16,13 @@ if (fs.existsSync(envPath)) {
 }
 
 async function main() {
-  const { db, setSetting, getSetting } = await import("../src/lib/db");
+  const { dbAll, setSetting, getSetting } = await import("../src/lib/db");
   const { analyticsSummary } = await import("../src/lib/analytics");
 
   const token = () => getSetting("TELEGRAM_BOT_TOKEN");
 
 async function api(method: string, body?: unknown) {
-  const t = token();
+  const t = await token();
   if (!t) {
     console.error("Нет TELEGRAM_BOT_TOKEN. Укажите токен в .env.local или в админке (Настройки).");
     process.exit(1);
@@ -54,23 +54,19 @@ async function loop() {
         const chatId = String(msg.chat.id);
         const text = String(msg.text || "").trim();
         if (text.startsWith("/start")) {
-          setSetting("TELEGRAM_CHAT_ID", chatId);
+          await setSetting("TELEGRAM_CHAT_ID", chatId);
           console.log("chat id сохранён:", chatId);
           await reply(
             chatId,
             "✅ <b>NOVERA</b>: этот чат подключён как чат менеджера.\nНовые заявки с сайта будут приходить сюда.\n\n/stats — сводка за 7 дней\n/last — последние 5 заявок"
           );
         } else if (text.startsWith("/stats")) {
-          const s = analyticsSummary("7d");
+          const s = await analyticsSummary("7d");
           await reply(chatId, `📊 <b>7 дней</b>\nВизиты: ${s.visits}\nУникальные: ${s.uniques}\nЗаявки: ${s.leads}\nКонверсия: ${s.conversion}%`);
         } else if (text.startsWith("/last")) {
-          const rows = db.prepare("SELECT id, created_at, name, phone, region FROM leads ORDER BY id DESC LIMIT 5").all() as {
-            id: number;
-            created_at: string;
-            name: string;
-            phone: string;
-            region: string;
-          }[];
+          const rows = await dbAll<{ id: number; created_at: string; name: string; phone: string; region: string }>(
+            "SELECT id, created_at, name, phone, region FROM leads ORDER BY id DESC LIMIT 5"
+          );
           await reply(
             chatId,
             rows.length ? rows.map((r) => `#${r.id} · ${new Date(r.created_at).toLocaleString("ru-RU")}\n${r.name} · ${r.phone} · ${r.region || "—"}`).join("\n\n") : "Заявок пока нет"

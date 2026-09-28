@@ -27,15 +27,15 @@ export type CalcSnapshot = {
   input?: Record<string, unknown>;
 };
 
-function creds() {
+async function creds() {
   return {
-    token: getSetting("TELEGRAM_BOT_TOKEN"),
-    chatId: getSetting("TELEGRAM_CHAT_ID"),
+    token: await getSetting("TELEGRAM_BOT_TOKEN"),
+    chatId: await getSetting("TELEGRAM_CHAT_ID"),
   };
 }
 
 async function tg(method: string, body: unknown, token?: string) {
-  const t = token || creds().token;
+  const t = token || (await creds()).token;
   if (!t) return { ok: false, skipped: true };
   const res = await fetch(`https://api.telegram.org/bot${t}/${method}`, {
     method: "POST",
@@ -50,14 +50,14 @@ export const telegramSetWebhook = (token: string, url: string) => tg("setWebhook
 export const telegramDeleteWebhook = (token: string) => tg("deleteWebhook", {}, token);
 
 export async function sendTelegramText(text: string, overrideChat?: string) {
-  const { chatId } = creds();
+  const { chatId } = await creds();
   const chat = overrideChat || chatId;
   if (!chat) return { ok: false, skipped: true };
   return tg("sendMessage", { chat_id: chat, text, parse_mode: "HTML", disable_web_page_preview: true });
 }
 
 export async function sendTelegramDocument(filePath: string, caption?: string) {
-  const { token, chatId } = creds();
+  const { token, chatId } = await creds();
   if (!token || !chatId) return { ok: false, skipped: true };
   const abs = path.isAbsolute(filePath) ? filePath : path.join(process.cwd(), filePath);
   if (!fs.existsSync(abs)) return { ok: false, missing: true };

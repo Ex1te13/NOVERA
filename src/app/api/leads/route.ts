@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "node:fs";
 import path from "node:path";
-import { db, uploadDir, type LeadRow } from "@/lib/db";
+import { dbAll, dbRun, uploadDir, type LeadRow } from "@/lib/db";
 import { notifyLead } from "@/lib/telegram";
 import { getAdminSession } from "@/lib/auth";
 
@@ -56,12 +56,10 @@ export async function POST(req: NextRequest) {
   const visitor_id = String(form.get("visitor_id") || "");
   const session_id = String(form.get("session_id") || "");
 
-  const info = db
-    .prepare(
-      `INSERT INTO leads (created_at, name, phone, email, region, services, area, description, files, calculator, source, referrer, utm, referral_code, landing_page, visitor_id, user_agent, ip, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new')`
-    )
-    .run(
+  const info = await dbRun(
+    `INSERT INTO leads (created_at, name, phone, email, region, services, area, description, files, calculator, source, referrer, utm, referral_code, landing_page, visitor_id, user_agent, ip, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new')`,
+    [
       now,
       name,
       phone,
@@ -79,13 +77,15 @@ export async function POST(req: NextRequest) {
       landing_page,
       visitor_id,
       req.headers.get("user-agent") || "",
-      (req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "").split(",")[0].trim()
-    );
+      (req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "").split(",")[0].trim(),
+    ]
+  );
   const id = Number(info.lastInsertRowid);
 
-  db.prepare(
-    `INSERT INTO events (created_at, visitor_id, session_id, type, payload, path, referral_code) VALUES (?, ?, ?, 'lead', ?, ?, ?)`
-  ).run(now, visitor_id || "anon", session_id, JSON.stringify({ lead_id: id, source }), landing_page, referral_code);
+  await dbRun(
+    `INSERT INTO events (created_at, visitor_id, session_id, type, payload, path, referral_code) VALUES (?, ?, ?, 'lead', ?, ?, ?)`,
+    [now, visitor_id || "anon", session_id, JSON.stringify({ lead_id: id, source }), landing_page, referral_code]
+  );
 
   notifyLead({
     id,
@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
 
 export async function GET() {
   if (!(await getAdminSession())) return NextResponse.json({ error: "auth" }, { status: 401 });
-  const rows = db.prepare("SELECT * FROM leads ORDER BY id DESC").all() as LeadRow[];
+  const rows = await dbAll<LeadRow>("SELECT * FROM leads ORDER BY id DESC");
   return NextResponse.json(rows);
 }
 
@@ -120,6 +120,6 @@ export async function PATCH(req: NextRequest) {
   const id = Number(body.id);
   const status = String(body.status || "new");
   if (!id) return NextResponse.json({ error: "id" }, { status: 400 });
-  db.prepare("UPDATE leads SET status = ? WHERE id = ?").run(status, id);
+  await dbRun("UPDATE leads SET status = ? WHERE id = ?", [status, id]);
   return NextResponse.json({ ok: true });
 }

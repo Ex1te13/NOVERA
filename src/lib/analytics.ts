@@ -1,4 +1,4 @@
-import { db } from "./db";
+import { dbAll, dbGet } from "./db";
 
 export type { Period } from "./periods";
 export { PERIODS } from "./periods";
@@ -35,19 +35,17 @@ export function periodRange(period: string) {
   return { start: start.toISOString(), end: end.toISOString(), startDate: start, endDate: end };
 }
 
-const count = (sql: string, ...params: unknown[]) => (db.prepare(sql).get(...params) as { c: number }).c;
+const count = async (sql: string, ...params: unknown[]) => Number((await dbGet<{ c: number }>(sql, params))?.c ?? 0);
 
-export function analyticsSummary(period: string) {
+export async function analyticsSummary(period: string) {
   const { start, end, startDate, endDate } = periodRange(period);
-  const visits = count("SELECT COUNT(*) c FROM visits WHERE created_at BETWEEN ? AND ?", start, end);
-  const uniques = count("SELECT COUNT(DISTINCT visitor_id) c FROM visits WHERE created_at BETWEEN ? AND ?", start, end);
-  const leads = count("SELECT COUNT(*) c FROM leads WHERE created_at BETWEEN ? AND ?", start, end);
-  const ev = (type: string) =>
-    count("SELECT COUNT(*) c FROM events WHERE type = ? AND created_at BETWEEN ? AND ?", type, start, end);
+  const visits = await count("SELECT COUNT(*) c FROM visits WHERE created_at BETWEEN ? AND ?", start, end);
+  const uniques = await count("SELECT COUNT(DISTINCT visitor_id) c FROM visits WHERE created_at BETWEEN ? AND ?", start, end);
+  const leads = await count("SELECT COUNT(*) c FROM leads WHERE created_at BETWEEN ? AND ?", start, end);
+  const ev = (type: string) => count("SELECT COUNT(*) c FROM events WHERE type = ? AND created_at BETWEEN ? AND ?", type, start, end);
 
-  const sources = db
-    .prepare(
-      `SELECT
+  const sources = await dbAll<{ source: string; visits: number; uniques: number }>(
+    `SELECT
          CASE
            WHEN referral_code != '' THEN 'ref:' || referral_code
            WHEN utm LIKE '%utm_source%' THEN 'utm:' || COALESCE(json_extract(utm, '$.utm_source'), '?')
@@ -57,49 +55,45 @@ export function analyticsSummary(period: string) {
          COUNT(*) visits,
          COUNT(DISTINCT visitor_id) uniques
        FROM visits WHERE created_at BETWEEN ? AND ?
-       GROUP BY source ORDER BY visits DESC LIMIT 15`
-    )
-    .all(start, end) as { source: string; visits: number; uniques: number }[];
+       GROUP BY source ORDER BY visits DESC LIMIT 15`,
+    [start, end]
+  );
 
-  const leadSources = db
-    .prepare(
-      `SELECT
+  const leadSources = await dbAll<{ source: string; leads: number }>(
+    `SELECT
          CASE
            WHEN referral_code != '' THEN 'ref:' || referral_code
            WHEN utm LIKE '%utm_source%' THEN 'utm:' || COALESCE(json_extract(utm, '$.utm_source'), '?')
            WHEN referrer != '' THEN referrer
            ELSE 'direct'
          END AS source, COUNT(*) leads
-       FROM leads WHERE created_at BETWEEN ? AND ? GROUP BY source`
-    )
-    .all(start, end) as { source: string; leads: number }[];
+       FROM leads WHERE created_at BETWEEN ? AND ? GROUP BY source`,
+    [start, end]
+  );
   const leadMap = new Map(leadSources.map((l) => [l.source, l.leads]));
 
-  const pages = db
-    .prepare(
-      `SELECT path, COUNT(*) views FROM visits WHERE created_at BETWEEN ? AND ? GROUP BY path ORDER BY views DESC LIMIT 10`
-    )
-    .all(start, end) as { path: string; views: number }[];
+  const pages = await dbAll<{ path: string; views: number }>(
+    `SELECT path, COUNT(*) views FROM visits WHERE created_at BETWEEN ? AND ? GROUP BY path ORDER BY views DESC LIMIT 10`,
+    [start, end]
+  );
 
-  const ctas = db
-    .prepare(
-      `SELECT COALESCE(json_extract(payload, '$.cta'), '—') cta, COUNT(*) clicks
-       FROM events WHERE type = 'cta' AND created_at BETWEEN ? AND ? GROUP BY cta ORDER BY clicks DESC LIMIT 10`
-    )
-    .all(start, end) as { cta: string; clicks: number }[];
+  const ctas = await dbAll<{ cta: string; clicks: number }>(
+    `SELECT COALESCE(json_extract(payload, '$.cta'), '—') cta, COUNT(*) clicks
+       FROM events WHERE type = 'cta' AND created_at BETWEEN ? AND ? GROUP BY cta ORDER BY clicks DESC LIMIT 10`,
+    [start, end]
+  );
 
-  // daily series
   const days: { day: string; visits: number; uniques: number; leads: number }[] = [];
   const spanDays = Math.max(1, Math.min(366, Math.ceil((endDate.getTime() - startDate.getTime()) / DAY)));
-  const rows = db
-    .prepare(
-      `SELECT substr(created_at, 1, 10) day, COUNT(*) visits, COUNT(DISTINCT visitor_id) uniques
-       FROM visits WHERE created_at BETWEEN ? AND ? GROUP BY day`
-    )
-    .all(start, end) as { day: string; visits: number; uniques: number }[];
-  const leadRows = db
-    .prepare(`SELECT substr(created_at, 1, 10) day, COUNT(*) leads FROM leads WHERE created_at BETWEEN ? AND ? GROUP BY day`)
-    .all(start, end) as { day: string; leads: number }[];
+  const rows = await dbAll<{ day: string; visits: number; uniques: number }>(
+    `SELECT substr(created_at, 1, 10) day, COUNT(*) visits, COUNT(DISTINCT visitor_id) uniques
+       FROM visits WHERE created_at BETWEEN ? AND ? GROUP BY day`,
+    [start, end]
+  );
+  const leadRows = await dbAll<{ day: string; leads: number }>(
+    `SELECT substr(created_at, 1, 10) day, COUNT(*) leads FROM leads WHERE created_at BETWEEN ? AND ? GROUP BY day`,
+    [start, end]
+  );
   const vMap = new Map(rows.map((r) => [r.day, r]));
   const lMap = new Map(leadRows.map((r) => [r.day, r.leads]));
   for (let i = 0; i < spanDays; i++) {
@@ -113,11 +107,11 @@ export function analyticsSummary(period: string) {
     uniques,
     leads,
     conversion: uniques ? Math.round((leads / uniques) * 1000) / 10 : 0,
-    phone: ev("phone"),
-    email: ev("email"),
-    cta: ev("cta"),
-    calculator: ev("calculator"),
-    formStart: ev("form_start"),
+    phone: await ev("phone"),
+    email: await ev("email"),
+    cta: await ev("cta"),
+    calculator: await ev("calculator"),
+    formStart: await ev("form_start"),
     sources: sources.map((s) => ({ ...s, leads: leadMap.get(s.source) ?? 0 })),
     pages,
     ctas,
@@ -125,7 +119,7 @@ export function analyticsSummary(period: string) {
   };
 }
 
-export function weeklySummaries(weeks = 12) {
+export async function weeklySummaries(weeks = 12) {
   const rows = [];
   const now = new Date();
   const monday = startOfDay(now);
@@ -135,12 +129,14 @@ export function weeklySummaries(weeks = 12) {
     const end = new Date(start.getTime() + 7 * DAY - 1);
     const s = start.toISOString();
     const e = end.toISOString();
-    const visits = count("SELECT COUNT(*) c FROM visits WHERE created_at BETWEEN ? AND ?", s, e);
-    const uniques = count("SELECT COUNT(DISTINCT visitor_id) c FROM visits WHERE created_at BETWEEN ? AND ?", s, e);
-    const leads = count("SELECT COUNT(*) c FROM leads WHERE created_at BETWEEN ? AND ?", s, e);
-    const phone = count("SELECT COUNT(*) c FROM events WHERE type='phone' AND created_at BETWEEN ? AND ?", s, e);
-    const email = count("SELECT COUNT(*) c FROM events WHERE type='email' AND created_at BETWEEN ? AND ?", s, e);
-    const cta = count("SELECT COUNT(*) c FROM events WHERE type='cta' AND created_at BETWEEN ? AND ?", s, e);
+    const [visits, uniques, leads, phone, email, cta] = await Promise.all([
+      count("SELECT COUNT(*) c FROM visits WHERE created_at BETWEEN ? AND ?", s, e),
+      count("SELECT COUNT(DISTINCT visitor_id) c FROM visits WHERE created_at BETWEEN ? AND ?", s, e),
+      count("SELECT COUNT(*) c FROM leads WHERE created_at BETWEEN ? AND ?", s, e),
+      count("SELECT COUNT(*) c FROM events WHERE type='phone' AND created_at BETWEEN ? AND ?", s, e),
+      count("SELECT COUNT(*) c FROM events WHERE type='email' AND created_at BETWEEN ? AND ?", s, e),
+      count("SELECT COUNT(*) c FROM events WHERE type='cta' AND created_at BETWEEN ? AND ?", s, e),
+    ]);
     rows.push({
       week: start.toISOString().slice(0, 10),
       visits,
@@ -155,20 +151,19 @@ export function weeklySummaries(weeks = 12) {
   return rows;
 }
 
-export function cohorts(weeks = 10) {
-  const first = db
-    .prepare("SELECT visitor_id, first_seen, referral_code FROM first_visits ORDER BY first_seen DESC LIMIT 5000")
-    .all() as { visitor_id: string; first_seen: string; referral_code: string }[];
+export async function cohorts(weeks = 10) {
+  const first = await dbAll<{ visitor_id: string; first_seen: string; referral_code: string }>(
+    "SELECT visitor_id, first_seen, referral_code FROM first_visits ORDER BY first_seen DESC LIMIT 5000"
+  );
   const converted = new Set(
-    (db.prepare("SELECT DISTINCT visitor_id FROM leads WHERE visitor_id IS NOT NULL AND visitor_id != ''").all() as {
-      visitor_id: string;
-    }[]).map((r) => r.visitor_id)
+    (await dbAll<{ visitor_id: string }>("SELECT DISTINCT visitor_id FROM leads WHERE visitor_id IS NOT NULL AND visitor_id != ''")).map(
+      (r) => r.visitor_id
+    )
   );
   const returning = new Map<string, number>(
-    (db.prepare("SELECT visitor_id, COUNT(DISTINCT session_id) s FROM visits GROUP BY visitor_id").all() as {
-      visitor_id: string;
-      s: number;
-    }[]).map((r) => [r.visitor_id, r.s])
+    (await dbAll<{ visitor_id: string; s: number }>("SELECT visitor_id, COUNT(DISTINCT session_id) s FROM visits GROUP BY visitor_id")).map(
+      (r) => [r.visitor_id, r.s]
+    )
   );
   const map = new Map<string, { size: number; converted: number; returned: number; ref: number }>();
   for (const row of first) {
@@ -196,17 +191,16 @@ export function cohorts(weeks = 10) {
     }));
 }
 
-export function referralStats() {
-  const refs = db.prepare("SELECT * FROM referrals ORDER BY created_at DESC").all() as {
-    id: number;
-    created_at: string;
-    name: string;
-    code: string;
-  }[];
-  return refs.map((r) => {
-    const clicks = count("SELECT COUNT(*) c FROM visits WHERE referral_code = ?", r.code);
-    const uniques = count("SELECT COUNT(DISTINCT visitor_id) c FROM visits WHERE referral_code = ?", r.code);
-    const leads = count("SELECT COUNT(*) c FROM leads WHERE referral_code = ?", r.code);
-    return { ...r, clicks, uniques, leads, conversion: uniques ? Math.round((leads / uniques) * 1000) / 10 : 0 };
-  });
+export async function referralStats() {
+  const refs = await dbAll<{ id: number; created_at: string; name: string; code: string }>("SELECT * FROM referrals ORDER BY created_at DESC");
+  return Promise.all(
+    refs.map(async (r) => {
+      const [clicks, uniques, leads] = await Promise.all([
+        count("SELECT COUNT(*) c FROM visits WHERE referral_code = ?", r.code),
+        count("SELECT COUNT(DISTINCT visitor_id) c FROM visits WHERE referral_code = ?", r.code),
+        count("SELECT COUNT(*) c FROM leads WHERE referral_code = ?", r.code),
+      ]);
+      return { ...r, clicks, uniques, leads, conversion: uniques ? Math.round((leads / uniques) * 1000) / 10 : 0 };
+    })
+  );
 }

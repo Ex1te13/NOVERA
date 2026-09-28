@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { dbRun } from "@/lib/db";
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
@@ -14,16 +14,19 @@ export async function POST(req: NextRequest) {
   const referrer = String(body.referrer || "").slice(0, 500);
 
   if (type === "pageview") {
-    db.prepare(
-      `INSERT INTO visits (created_at, visitor_id, session_id, path, referrer, utm, referral_code, user_agent) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-    ).run(now, visitor, session, path, referrer, utm, refCode, String(body.user_agent || "").slice(0, 300));
-    db.prepare(
-      `INSERT INTO first_visits (visitor_id, first_seen, referral_code, utm, referrer) VALUES (?, ?, ?, ?, ?) ON CONFLICT(visitor_id) DO NOTHING`
-    ).run(visitor, now, refCode, utm, referrer);
+    await dbRun(
+      `INSERT INTO visits (created_at, visitor_id, session_id, path, referrer, utm, referral_code, user_agent) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [now, visitor, session, path, referrer, utm, refCode, String(body.user_agent || "").slice(0, 300)]
+    );
+    await dbRun(
+      `INSERT INTO first_visits (visitor_id, first_seen, referral_code, utm, referrer) VALUES (?, ?, ?, ?, ?) ON CONFLICT(visitor_id) DO NOTHING`,
+      [visitor, now, refCode, utm, referrer]
+    );
   } else {
-    db.prepare(
-      `INSERT INTO events (created_at, visitor_id, session_id, type, payload, path, referral_code) VALUES (?, ?, ?, ?, ?, ?, ?)`
-    ).run(now, visitor, session, type, JSON.stringify(body.payload || {}), path, refCode);
+    await dbRun(
+      `INSERT INTO events (created_at, visitor_id, session_id, type, payload, path, referral_code) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [now, visitor, session, type, JSON.stringify(body.payload || {}), path, refCode]
+    );
   }
   return NextResponse.json({ ok: true });
 }

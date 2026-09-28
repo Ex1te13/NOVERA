@@ -1,7 +1,7 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
-import { db } from "./db";
+import { dbGet } from "./db";
 
 const secret = new TextEncoder().encode(
   process.env.SESSION_SECRET || "novera-session-secret-change-in-production-32chars"
@@ -10,9 +10,7 @@ const secret = new TextEncoder().encode(
 const COOKIE = "novera_admin";
 
 export async function loginAdmin(login: string, password: string) {
-  const admin = db.prepare("SELECT * FROM admins WHERE login = ?").get(login) as
-    | { id: number; login: string; password_hash: string }
-    | undefined;
+  const admin = await dbGet<{ id: number; login: string; password_hash: string }>("SELECT * FROM admins WHERE login = ?", [login]);
   if (!admin) return false;
   const ok = await bcrypt.compare(password, admin.password_hash);
   if (!ok) return false;

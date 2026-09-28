@@ -5,24 +5,24 @@ import { sendTelegramText, telegramDeleteWebhook, telegramGetMe, telegramSetWebh
 
 export async function GET() {
   if (!(await getAdminSession())) return NextResponse.json({ error: "auth" }, { status: 401 });
-  const token = getSetting("TELEGRAM_BOT_TOKEN");
+  const token = await getSetting("TELEGRAM_BOT_TOKEN");
   return NextResponse.json({
     hasToken: Boolean(token),
     tokenPreview: token ? token.slice(0, 10) + "…" : "",
-    chatId: getSetting("TELEGRAM_CHAT_ID"),
+    chatId: await getSetting("TELEGRAM_CHAT_ID"),
     siteUrl: process.env.SITE_URL || "http://localhost:3000",
-    metrika: getSetting("YANDEX_METRIKA_ID"),
+    metrika: await getSetting("YANDEX_METRIKA_ID"),
   });
 }
 
 export async function POST(req: NextRequest) {
   if (!(await getAdminSession())) return NextResponse.json({ error: "auth" }, { status: 401 });
   const body = await req.json().catch(() => ({}));
-  if (typeof body.token === "string" && body.token.trim()) setSetting("TELEGRAM_BOT_TOKEN", body.token.trim());
-  if (typeof body.chatId === "string") setSetting("TELEGRAM_CHAT_ID", body.chatId.trim());
-  if (typeof body.metrika === "string") setSetting("YANDEX_METRIKA_ID", body.metrika.trim());
+  if (typeof body.token === "string" && body.token.trim()) await setSetting("TELEGRAM_BOT_TOKEN", body.token.trim());
+  if (typeof body.chatId === "string") await setSetting("TELEGRAM_CHAT_ID", body.chatId.trim());
+  if (typeof body.metrika === "string") await setSetting("YANDEX_METRIKA_ID", body.metrika.trim());
 
-  const token = getSetting("TELEGRAM_BOT_TOKEN");
+  const token = await getSetting("TELEGRAM_BOT_TOKEN");
   let result: unknown = null;
   if (body.action === "me" && token) result = await telegramGetMe(token);
   if (body.action === "webhook" && token) {

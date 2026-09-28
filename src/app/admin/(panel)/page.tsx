@@ -1,8 +1,8 @@
-import { db, type LeadRow } from "@/lib/db";
+import { dbAll, type LeadRow } from "@/lib/db";
 import { LeadsTable } from "@/components/admin/LeadsTable";
 
-export default function AdminLeadsPage() {
-  const rows = db.prepare("SELECT * FROM leads ORDER BY id DESC").all() as LeadRow[];
+export default async function AdminLeadsPage() {
+  const rows = await dbAll<LeadRow>("SELECT * FROM leads ORDER BY id DESC");
   return (
     <div>
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">

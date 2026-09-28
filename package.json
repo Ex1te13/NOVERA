@@ -10,6 +10,7 @@
     "bot": "npx tsx scripts/telegram-bot.ts"
   },
   "dependencies": {
+    "@libsql/client": "^0.18.0",
     "bcryptjs": "^2.4.3",
     "better-sqlite3": "^12.11.1",
     "exceljs": "^4.4.0",

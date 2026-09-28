@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { referralStats } from "@/lib/analytics";
 
-type Row = ReturnType<typeof referralStats>[number];
+type Row = Awaited<ReturnType<typeof referralStats>>[number];
 
 export function Referrals({ initial, siteUrl }: { initial: Row[]; siteUrl: string }) {
   const [rows, setRows] = useState(initial);

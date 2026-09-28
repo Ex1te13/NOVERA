@@ -5,7 +5,11 @@ import { useEffect, useState } from "react";
 import { PERIODS } from "@/lib/periods";
 import type { analyticsSummary, cohorts, weeklySummaries } from "@/lib/analytics";
 
-type Data = { summary: ReturnType<typeof analyticsSummary>; weekly: ReturnType<typeof weeklySummaries>; cohorts: ReturnType<typeof cohorts> };
+type Data = {
+  summary: Awaited<ReturnType<typeof analyticsSummary>>;
+  weekly: Awaited<ReturnType<typeof weeklySummaries>>;
+  cohorts: Awaited<ReturnType<typeof cohorts>>;
+};
 
 function Bars({ data, keys, colors }: { data: Record<string, number | string>[]; keys: string[]; colors: string[] }) {
   const max = Math.max(1, ...data.flatMap((d) => keys.map((k) => Number(d[k]) || 0)));
