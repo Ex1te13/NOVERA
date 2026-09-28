@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import fs from "node:fs";
 import path from "node:path";
 
-const dataDir = path.join(process.cwd(), "data");
+const dataDir = process.env.VERCEL ? path.join("/tmp", "novera") : path.join(process.cwd(), "data");
 const uploadDir = path.join(dataDir, "uploads");
 const dbPath = path.join(dataDir, "novera.db");
 
