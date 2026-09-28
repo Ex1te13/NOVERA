@@ -1,0 +1,103 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+type S = { hasToken: boolean; tokenPreview: string; chatId: string; siteUrl: string; metrika: string };
+
+export function Settings() {
+  const [s, setS] = useState<S | null>(null);
+  const [token, setToken] = useState("");
+  const [chatId, setChatId] = useState("");
+  const [metrika, setMetrika] = useState("");
+  const [log, setLog] = useState<string>("");
+  const [busy, setBusy] = useState(false);
+
+  const load = () =>
+    fetch("/api/telegram/settings")
+      .then((r) => r.json())
+      .then((d: S) => {
+        setS(d);
+        setChatId(d.chatId || "");
+        setMetrika(d.metrika || "");
+      });
+  useEffect(() => {
+    load();
+  }, []);
+
+  const post = async (body: Record<string, unknown>) => {
+    setBusy(true);
+    const res = await fetch("/api/telegram/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const d = await res.json();
+    setLog(JSON.stringify(d.result ?? d, null, 2));
+    setBusy(false);
+    setToken("");
+    load();
+  };
+
+  return (
+    <div className="max-w-3xl">
+      <p className="eyebrow">Настройки</p>
+      <h1 className="mt-2 font-display text-3xl font-bold">Telegram и Метрика</h1>
+
+      <div className="admin-card mt-6">
+        <h2 className="font-medium">Telegram-бот менеджера</h2>
+        <ol className="mt-3 list-decimal space-y-1 pl-5 text-sm text-mist">
+          <li>
+            Откройте <a href="https://t.me/BotFather" target="_blank" className="text-moss-400 underline">@BotFather</a>, команда <code>/newbot</code>, скопируйте токен.
+          </li>
+          <li>Вставьте токен ниже и сохраните.</li>
+          <li>
+            Напишите боту <code>/start</code> — chat id сохранится автоматически (через webhook на публичном сервере или через <code>npm run bot</code> локально).
+          </li>
+          <li>Нажмите «Тестовое сообщение» — оно должно прийти в Telegram.</li>
+        </ol>
+
+        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="label">Токен бота</label>
+            <input value={token} onChange={(e) => setToken(e.target.value)} placeholder={s?.hasToken ? `сохранён: ${s.tokenPreview}` : "123456:ABC-DEF…"} className="admin-input font-mono" />
+          </div>
+          <div>
+            <label className="label">Chat ID менеджера</label>
+            <input value={chatId} onChange={(e) => setChatId(e.target.value)} placeholder="заполнится после /start" className="admin-input font-mono" />
+          </div>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button disabled={busy} onClick={() => post({ token: token || undefined, chatId })} className="admin-btn">
+            Сохранить
+          </button>
+          <button disabled={busy || !s?.hasToken} onClick={() => post({ action: "me" })} className="admin-btn-ghost">
+            Проверить бота
+          </button>
+          <button disabled={busy || !s?.hasToken} onClick={() => post({ action: "webhook" })} className="admin-btn-ghost">
+            Подключить webhook
+          </button>
+          <button disabled={busy || !s?.hasToken} onClick={() => post({ action: "unwebhook" })} className="admin-btn-ghost">
+            Отключить webhook
+          </button>
+          <button disabled={busy || !s?.hasToken || !s?.chatId} onClick={() => post({ action: "test" })} className="admin-btn-ghost">
+            Тестовое сообщение
+          </button>
+        </div>
+        <p className="mt-3 text-xs text-mist">
+          Webhook: <code>{s?.siteUrl}/api/telegram/webhook</code>. Для localhost используйте <code>npm run bot</code> (long polling).
+        </p>
+      </div>
+
+      <div className="admin-card mt-4">
+        <h2 className="font-medium">Яндекс Метрика</h2>
+        <p className="mt-2 text-sm text-mist">Укажите номер счётчика. Код вставится на все страницы, цели PHONE, EMAIL, CTA, CALCULATOR, FORM_START и LEAD_SUBMIT будут отправляться автоматически.</p>
+        <div className="mt-4 flex gap-2">
+          <input value={metrika} onChange={(e) => setMetrika(e.target.value)} placeholder="12345678" className="admin-input max-w-xs font-mono" />
+          <button disabled={busy} onClick={() => post({ metrika })} className="admin-btn">
+            Сохранить
+          </button>
+        </div>
+      </div>
+
+      {log && (
+        <pre className="admin-card mt-4 overflow-x-auto whitespace-pre-wrap text-xs text-mist">{log}</pre>
+      )}
+    </div>
+  );
+}
