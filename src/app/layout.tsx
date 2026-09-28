@@ -3,7 +3,6 @@ import "./globals.css";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { AnalyticsTracker } from "@/components/AnalyticsTracker";
-import { getSetting } from "@/lib/db";
 
 export const metadata: Metadata = {
   title: {
@@ -27,7 +26,7 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const metrikaId = getSetting("YANDEX_METRIKA_ID");
+  const metrikaId = process.env.YANDEX_METRIKA_ID || "";
   return (
     <html lang="ru">
       <head>

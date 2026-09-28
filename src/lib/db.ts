@@ -104,10 +104,29 @@ function open() {
   return db;
 }
 
-const db = globalThis.__noveraDb ?? open();
-if (process.env.NODE_ENV !== "production") globalThis.__noveraDb = db;
+let cached: Database.Database | undefined;
 
-export { db, uploadDir };
+function getDb() {
+  if (cached) return cached;
+  if (globalThis.__noveraDb) {
+    cached = globalThis.__noveraDb;
+    return cached;
+  }
+  cached = open();
+  if (process.env.NODE_ENV !== "production") globalThis.__noveraDb = cached;
+  return cached;
+}
+
+/** База открывается при первом запросе, а не во время сборки страниц. */
+export const db = new Proxy({} as Database.Database, {
+  get(_target, prop, receiver) {
+    const database = getDb();
+    const value = Reflect.get(database, prop, receiver);
+    return typeof value === "function" ? (value as (...args: unknown[]) => unknown).bind(database) : value;
+  },
+});
+
+export { uploadDir };
 
 export function getSetting(key: string): string {
   const row = db.prepare("SELECT value FROM settings WHERE key = ?").get(key) as { value: string } | undefined;
