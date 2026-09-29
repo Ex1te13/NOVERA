@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Cormorant_Garamond, Manrope, Unbounded } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -20,6 +21,16 @@ export const metadata: Metadata = {
   },
 };
 
+const display = Unbounded({ subsets: ["latin", "cyrillic"], variable: "--font-display", display: "swap" });
+const sans = Manrope({ subsets: ["latin", "cyrillic"], variable: "--font-sans", display: "swap" });
+const serif = Cormorant_Garamond({
+  subsets: ["latin", "cyrillic"],
+  weight: ["400", "500"],
+  style: ["normal", "italic"],
+  variable: "--font-serif",
+  display: "swap",
+});
+
 export const viewport: Viewport = {
   themeColor: "#080a09",
   width: "device-width",
@@ -29,14 +40,8 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const metrikaId = process.env.YANDEX_METRIKA_ID || "";
   return (
-    <html lang="ru">
+    <html lang="ru" className={`${display.variable} ${sans.variable} ${serif.variable}`}>
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700;800;900&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Manrope:wght@300;400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
       </head>
       <body>

@@ -1,5 +1,19 @@
-/** Локальные копии фото, чтобы сайт не зависел от Unsplash. */
-export const u = (id: string, _w = 1800, _extra = "") => `/photos/${id}.jpg`;
+/**
+ * Локальные копии фото, чтобы сайт не зависел от Unsplash.
+ * Отдаются через оптимизатор Next: нужная ширина и WebP вместо исходного JPG 1800px.
+ * Ширина должна входить в deviceSizes/imageSizes из next.config.
+ */
+const WIDTHS = [384, 640, 828, 1080, 1200, 1920] as const;
+
+const fit = (w: number) => WIDTHS.find((s) => s >= w) ?? WIDTHS[WIDTHS.length - 1];
+
+export const u = (id: string, w = 1200, _extra = "") => `/_next/image?url=${encodeURIComponent(`/photos/${id}.jpg`)}&w=${fit(w)}&q=72`;
+
+/** srcSet для крупных фото, чтобы телефон не качал версию для большого экрана */
+export const srcSet = (id: string, max = 1920) =>
+  WIDTHS.filter((s) => s >= 640 && s <= max)
+    .map((s) => `${u(id, s)} ${s}w`)
+    .join(", ");
 
 /** Дома (экстерьеры) */
 export const HOUSES = {

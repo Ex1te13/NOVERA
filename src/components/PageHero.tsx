@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { u } from "@/data/images";
+import { srcSet, u } from "@/data/images";
 import { ease } from "./ui";
 
 export function PageHero({
@@ -24,7 +24,10 @@ export function PageHero({
       {image && (
         <>
           <motion.img
-            src={u(image, 2200)}
+            src={u(image, 1920)}
+            srcSet={srcSet(image)}
+            sizes="100vw"
+            fetchPriority="high"
             alt=""
             initial={{ opacity: 0, scale: 1.08 }}
             animate={{ opacity: 1, scale: 1 }}

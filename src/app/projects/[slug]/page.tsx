@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getProject, projects } from "@/data/projects";
 import { REVIEWS } from "@/data/content";
-import { u } from "@/data/images";
+import { srcSet, u } from "@/data/images";
 import { Gallery } from "@/components/Gallery";
 import { ArrowIcon, Eyebrow, Img, Reveal } from "@/components/ui";
 import { CtaBanner } from "@/components/home/CtaBanner";
@@ -29,7 +29,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
   return (
     <>
       <section className="relative h-[92svh] min-h-[600px] overflow-hidden">
-        <img src={u(p.cover, 2400)} alt={p.title} className="absolute inset-0 h-full w-full animate-ken object-cover" />
+        <img src={u(p.cover, 1920)} srcSet={srcSet(p.cover)} sizes="100vw" fetchPriority="high" alt={p.title} className="absolute inset-0 h-full w-full animate-ken object-cover" />
         <div className="absolute inset-0 bg-gradient-to-b from-ink/60 via-ink/10 to-ink" />
         <div className="container-x relative flex h-full flex-col justify-end pb-14">
           <Link href="/projects" className="eyebrow mb-8 inline-flex items-center gap-2 hover:text-bone">

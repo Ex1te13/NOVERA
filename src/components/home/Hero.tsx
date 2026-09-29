@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useMotionValue, useScroll, useSpring, useTransform } from "framer-motion";
 import { HERO_SPOTS } from "@/data/content";
-import { HOUSES, u } from "@/data/images";
+import { HOUSES, srcSet, u } from "@/data/images";
 import { ease, MagneticButton, ArrowIcon } from "@/components/ui";
 
 export function Hero() {
@@ -52,7 +52,10 @@ export function Hero() {
       <motion.div style={{ y: bgY }} className="absolute inset-0">
         <motion.div style={{ x: imgX, y: imgY }} className="h-full w-full">
           <motion.img
-            src={u(HOUSES.heroAFrame, 2400)}
+            src={u(HOUSES.heroAFrame, 1920)}
+            srcSet={srcSet(HOUSES.heroAFrame)}
+            sizes="100vw"
+            fetchPriority="high"
             alt="Дом NOVERA в сосновом лесу"
             initial={{ scale: 1.12, opacity: 0 }}
             animate={{ scale: 1.04, opacity: 1 }}
@@ -62,7 +65,7 @@ export function Hero() {
         </motion.div>
         <div className="absolute inset-0 bg-gradient-to-b from-ink/70 via-ink/10 to-ink" />
         <div className="absolute inset-0 bg-gradient-to-r from-ink/60 via-transparent to-ink/30" />
-        <div className="absolute inset-0 bg-moss-950/30 mix-blend-multiply" />
+        <div className="absolute inset-0 bg-moss-950/25" />
       </motion.div>
 
       {/* огромное слово */}

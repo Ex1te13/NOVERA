@@ -52,7 +52,7 @@ export function Header() {
         animate={{ y: hidden ? -120 : 0 }}
         transition={{ duration: 0.5, ease }}
         className={`fixed inset-x-0 top-0 z-50 transition-colors duration-500 ${
-          scrolled ? "bg-ink/70 backdrop-blur-xl" : "bg-transparent"
+          scrolled ? "bg-ink/90 lg:bg-ink/70 lg:backdrop-blur-lg" : "bg-transparent"
         }`}
       >
         <div className="container-x flex h-[72px] items-center justify-between md:h-[88px]">
@@ -105,7 +105,7 @@ export function Header() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.4 }}
-            className="fixed inset-0 z-40 flex flex-col bg-ink/95 px-6 pb-10 pt-28 backdrop-blur-2xl"
+            className="fixed inset-0 z-40 flex flex-col bg-ink px-6 pb-10 pt-28"
           >
             <nav className="flex flex-col gap-2">
               {NAV.map((n, i) => (

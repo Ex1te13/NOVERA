@@ -88,7 +88,7 @@ export function Gallery({ items }: { items: GalleryItem[] }) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.4 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-ink/95 backdrop-blur-xl"
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-ink/95"
             onClick={close}
           >
             <button onClick={close} aria-label="Закрыть" className="absolute right-5 top-5 flex h-12 w-12 items-center justify-center rounded-full border border-white/20 text-2xl hover:bg-white/10">

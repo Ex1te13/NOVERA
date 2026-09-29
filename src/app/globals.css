@@ -3,9 +3,6 @@
 @tailwind utilities;
 
 :root {
-  --font-display: "Unbounded";
-  --font-serif: "Cormorant Garamond";
-  --font-sans: "Manrope";
   --header-h: 88px;
 }
 
@@ -107,7 +104,7 @@
     @apply btn border border-ink/30 text-ink hover:bg-ink hover:text-bone;
   }
   .glass {
-    @apply border border-white/10 bg-white/[0.06] backdrop-blur-xl;
+    @apply border border-white/10 bg-ink/70 lg:bg-white/[0.06] lg:backdrop-blur-md;
   }
   .field {
     @apply w-full rounded-none border-0 border-b border-white/20 bg-transparent px-0 py-3 text-base text-bone placeholder:text-ash focus:border-moss-400 focus:outline-none focus:ring-0 transition-colors;
@@ -173,9 +170,14 @@
   inset: 0;
   pointer-events: none;
   z-index: 60;
-  opacity: 0.045;
-  mix-blend-mode: overlay;
+  opacity: 0.035;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+/* полноэкранный фиксированный слой заметно тормозит прокрутку на телефонах */
+@media (max-width: 1023px), (pointer: coarse) {
+  .grain {
+    display: none;
+  }
 }
 
 .preloader {

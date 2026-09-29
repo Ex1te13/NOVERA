@@ -57,11 +57,16 @@ const config: Config = {
           "0%": { transform: "scale(1)", opacity: "0.9" },
           "100%": { transform: "scale(2.4)", opacity: "0" },
         },
+        fadeUp: {
+          "0%": { transform: "translateY(10px)", opacity: "0" },
+          "100%": { transform: "translateY(0)", opacity: "1" },
+        },
       },
       animation: {
         marquee: "marquee 40s linear infinite",
         ken: "ken 18s ease-out forwards",
         pulseDot: "pulseDot 1.8s ease-out infinite",
+        fadeUp: "fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both",
       },
     },
   },

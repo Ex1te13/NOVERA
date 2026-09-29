@@ -2,7 +2,7 @@
 
 import { motion, useInView, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { useEffect, useRef, type ReactNode } from "react";
-import { u } from "@/data/images";
+import { srcSet, u } from "@/data/images";
 
 export const ease = [0.16, 1, 0.3, 1] as const;
 
@@ -80,7 +80,7 @@ export function Img({
   const ref = useRef<HTMLDivElement>(null);
   const y = useMotionValue(0);
   useEffect(() => {
-    if (!parallax) return;
+    if (!parallax || !window.matchMedia("(min-width: 1024px) and (pointer: fine)").matches) return;
     const el = ref.current;
     if (!el) return;
     let raf = 0;
@@ -101,16 +101,11 @@ export function Img({
     };
   }, [parallax, y]);
 
-  const srcSet = [640, 1024, 1600, 2200]
-    .filter((s) => s <= Math.max(w, 640))
-    .map((s) => `${u(id, s)} ${s}w`)
-    .join(", ");
-
   return (
     <div ref={ref} className={`relative overflow-hidden ${className}`}>
       <motion.img
         src={u(id, w)}
-        srcSet={srcSet}
+        srcSet={srcSet(id, Math.max(w, 640))}
         sizes={sizes || "(max-width: 768px) 100vw, 60vw"}
         alt={alt}
         loading={priority ? "eager" : "lazy"}

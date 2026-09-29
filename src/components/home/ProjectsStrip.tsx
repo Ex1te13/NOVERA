@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { projects } from "@/data/projects";
 import { u } from "@/data/images";
@@ -12,6 +12,14 @@ export function ProjectsStrip() {
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
   const x = useTransform(scrollYProgress, [0, 1], ["4%", "-30%"]);
   const featured = projects.slice(0, 7);
+  const [desktop, setDesktop] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px) and (pointer: fine)");
+    const sync = () => setDesktop(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
 
   return (
     <section className="relative overflow-hidden bg-ink py-24 md:py-36">
@@ -27,14 +35,16 @@ export function ProjectsStrip() {
         </Link>
       </div>
 
-      <div ref={ref}>
-        <motion.div style={{ x }} className="flex gap-5 pl-5 sm:pl-8 lg:pl-12">
+      <div ref={ref} className={desktop ? "" : "hide-scrollbar snap-x snap-mandatory overflow-x-auto overscroll-x-contain scroll-pl-5 sm:scroll-pl-8"}>
+        <motion.div style={desktop ? { x } : undefined} className="flex gap-5 pl-5 sm:pl-8 lg:pl-12">
           {featured.map((p, i) => (
-            <Reveal key={p.slug} delay={i * 0.05} className="shrink-0">
+            <Reveal key={p.slug} delay={desktop ? i * 0.05 : 0} className="shrink-0 snap-start">
               <Link href={`/projects/${p.slug}`} className="group relative block w-[78vw] overflow-hidden rounded-[1.75rem] sm:w-[48vw] lg:w-[30vw]">
                 <div className={`aspect-[4/5] ${i % 3 === 1 ? "lg:aspect-[3/4]" : ""}`}>
                   <img
-                    src={u(p.cover, 1200)}
+                    src={u(p.cover, 828)}
+                    srcSet={`${u(p.cover, 640)} 640w, ${u(p.cover, 828)} 828w, ${u(p.cover, 1080)} 1080w`}
+                    sizes="(min-width: 1024px) 30vw, (min-width: 640px) 48vw, 78vw"
                     alt={p.title}
                     loading="lazy"
                     className="h-full w-full object-cover transition-transform duration-[1400ms] ease-out group-hover:scale-105"
@@ -58,14 +68,14 @@ export function ProjectsStrip() {
                 <span
                   className={`absolute left-6 top-6 rounded-full px-3 py-1 text-[10px] uppercase tracking-wide2 ${
                     p.accent === "moss" ? "bg-moss-700/80" : "bg-wine-700/80"
-                  } backdrop-blur`}
+                  }`}
                 >
                   {p.works.length} видов работ
                 </span>
               </Link>
             </Reveal>
           ))}
-          <div className="w-[10vw] shrink-0" />
+          <div className="w-1 shrink-0 lg:w-[10vw]" />
         </motion.div>
       </div>
     </section>

@@ -69,7 +69,7 @@ export function ProjectsGrid() {
                       </span>
                     </div>
                   </div>
-                  <span className={`absolute left-6 top-6 rounded-full px-3 py-1 text-[10px] uppercase tracking-wide2 backdrop-blur ${p.accent === "moss" ? "bg-moss-700/80" : "bg-wine-700/80"}`}>
+                  <span className={`absolute left-6 top-6 rounded-full px-3 py-1 text-[10px] uppercase tracking-wide2 ${p.accent === "moss" ? "bg-moss-700/80" : "bg-wine-700/80"}`}>
                     {p.gallery.length} фото
                   </span>
                 </Link>
