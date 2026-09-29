@@ -17,7 +17,7 @@ export default function ContactsPage() {
 
       <section className="bg-ink pb-20 md:pb-28">
         <div className="container-x grid gap-12 lg:grid-cols-12">
-          <Reveal className="lg:col-span-4">
+          <Reveal className="min-w-0 lg:col-span-4">
             <div className="space-y-10">
               <div>
                 <Eyebrow>Телефон</Eyebrow>
@@ -51,7 +51,7 @@ export default function ContactsPage() {
             </div>
           </Reveal>
 
-          <Reveal delay={0.1} className="lg:col-span-8">
+          <Reveal delay={0.1} className="min-w-0 lg:col-span-8">
             <div id="form" className="scroll-mt-28 rounded-[2rem] border border-white/10 bg-coal p-7 md:p-12">
               <Eyebrow>Заявка</Eyebrow>
               <h2 className="h-display mt-4 text-3xl md:text-4xl">Расскажите о проекте</h2>

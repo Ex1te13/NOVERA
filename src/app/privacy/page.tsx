@@ -8,7 +8,7 @@ export default function PrivacyPage() {
     <section className="bg-ink pb-24 pt-36">
       <div className="container-x max-w-3xl">
         <p className="eyebrow eyebrow-dot">Документы</p>
-        <h1 className="h-display mt-6 text-4xl md:text-6xl">Политика конфиденциальности</h1>
+        <h1 className="h-display mt-6 hyphens-auto text-[clamp(1.2rem,5vw,2.5rem)]">Политика конфиденциальности</h1>
         <div className="mt-10 space-y-6 text-[15px] leading-relaxed text-bone/80">
           <p>
             Настоящая политика описывает, как {COMPANY.name} обрабатывает персональные данные, которые вы оставляете на сайте: имя, телефон, электронную почту, регион, описание проекта и приложенные файлы.

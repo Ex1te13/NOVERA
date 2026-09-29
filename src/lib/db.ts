@@ -157,7 +157,8 @@ async function localDriver(): Promise<Driver> {
 
 async function seed(driver: Driver) {
   const login = process.env.ADMIN_LOGIN || "admin";
-  const password = process.env.ADMIN_PASSWORD || "NoveraAdmin2026";
+  const password = process.env.ADMIN_PASSWORD;
+  if (!password) return;
   const existing = await driver.get<{ id: number }>("SELECT id FROM admins WHERE login = ?", [login]);
   if (existing) return;
   try {

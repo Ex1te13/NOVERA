@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { dbRun } from "@/lib/db";
+import { externalReferrer } from "@/lib/referrer";
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
@@ -11,7 +12,7 @@ export async function POST(req: NextRequest) {
   const refCode = String(body.referral_code || "").slice(0, 64);
   const utm = JSON.stringify(body.utm || {});
   const path = String(body.path || "").slice(0, 300);
-  const referrer = String(body.referrer || "").slice(0, 500);
+  const referrer = externalReferrer(String(body.referrer || ""), req.headers.get("host")).slice(0, 500);
 
   if (type === "pageview") {
     await dbRun(

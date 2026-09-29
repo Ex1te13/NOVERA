@@ -9,12 +9,11 @@ const secret = new TextEncoder().encode(
 
 const COOKIE = "novera_admin";
 
-export async function loginAdmin(login: string, password: string) {
-  const admin = await dbGet<{ id: number; login: string; password_hash: string }>("SELECT * FROM admins WHERE login = ?", [login]);
-  if (!admin) return false;
-  const ok = await bcrypt.compare(password, admin.password_hash);
-  if (!ok) return false;
-  const token = await new SignJWT({ sub: admin.login })
+// привязка сессии к паролю: после смены пароля старые входы перестают действовать
+const passwordStamp = (hash: string) => hash.slice(-12);
+
+export async function startAdminSession(login: string, passwordHash: string) {
+  const token = await new SignJWT({ sub: login, pw: passwordStamp(passwordHash) })
     .setProtectedHeader({ alg: "HS256" })
     .setExpirationTime("7d")
     .sign(secret);
@@ -25,6 +24,14 @@ export async function loginAdmin(login: string, password: string) {
     path: "/",
     maxAge: 60 * 60 * 24 * 7,
   });
+}
+
+export async function loginAdmin(login: string, password: string) {
+  const admin = await dbGet<{ id: number; login: string; password_hash: string }>("SELECT * FROM admins WHERE login = ?", [login]);
+  if (!admin) return false;
+  const ok = await bcrypt.compare(password, admin.password_hash);
+  if (!ok) return false;
+  await startAdminSession(admin.login, admin.password_hash);
   return true;
 }
 
@@ -39,7 +46,11 @@ export async function getAdminSession() {
   if (!token) return null;
   try {
     const { payload } = await jwtVerify(token, secret);
-    return (payload.sub as string) || null;
+    const login = payload.sub as string;
+    if (!login) return null;
+    const admin = await dbGet<{ password_hash: string }>("SELECT password_hash FROM admins WHERE login = ?", [login]);
+    if (!admin || payload.pw !== passwordStamp(admin.password_hash)) return null;
+    return login;
   } catch {
     return null;
   }

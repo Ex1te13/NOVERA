@@ -4,6 +4,7 @@ import path from "node:path";
 import { dbAll, dbRun, uploadDir, type LeadRow } from "@/lib/db";
 import { notifyLead } from "@/lib/telegram";
 import { getAdminSession } from "@/lib/auth";
+import { externalReferrer } from "@/lib/referrer";
 
 const ALLOWED_TYPES = new Set(["application/pdf", "image/jpeg", "image/png", "image/webp", "image/gif", "image/heic", "image/heif"]);
 const MAX_SIZE = 15 * 1024 * 1024;
@@ -50,7 +51,7 @@ export async function POST(req: NextRequest) {
 
   const now = new Date().toISOString();
   const source = String(form.get("source") || "site");
-  const referrer = String(form.get("referrer") || "");
+  const referrer = externalReferrer(String(form.get("referrer") || ""), req.headers.get("host"));
   const referral_code = String(form.get("referral_code") || "");
   const landing_page = String(form.get("landing_page") || "");
   const visitor_id = String(form.get("visitor_id") || "");

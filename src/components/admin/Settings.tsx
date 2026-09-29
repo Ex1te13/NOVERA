@@ -37,7 +37,7 @@ export function Settings() {
   return (
     <div className="max-w-3xl">
       <p className="eyebrow">Настройки</p>
-      <h1 className="mt-2 font-display text-3xl font-bold">Telegram и Метрика</h1>
+      <h1 className="mt-2 font-display text-3xl font-bold">Telegram, Метрика и пароль</h1>
 
       <div className="admin-card mt-6">
         <h2 className="font-medium">Telegram-бот менеджера</h2>
@@ -96,9 +96,60 @@ export function Settings() {
         </div>
       </div>
 
+      <PasswordCard />
+
       {log && (
         <pre className="admin-card mt-4 overflow-x-auto whitespace-pre-wrap text-xs text-mist">{log}</pre>
       )}
     </div>
+  );
+}
+
+function PasswordCard() {
+  const [current, setCurrent] = useState("");
+  const [next, setNext] = useState("");
+  const [repeat, setRepeat] = useState("");
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (next !== repeat) return setMsg({ ok: false, text: "Новые пароли не совпадают" });
+    setBusy(true);
+    const res = await fetch("/api/auth/password", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ current, next }) });
+    const d = await res.json().catch(() => ({}));
+    setBusy(false);
+    if (!res.ok) return setMsg({ ok: false, text: d.error || "Не удалось сменить пароль" });
+    setCurrent("");
+    setNext("");
+    setRepeat("");
+    setMsg({ ok: true, text: "Пароль изменён. Все остальные входы в админку завершены." });
+  };
+
+  return (
+    <form onSubmit={submit} className="admin-card mt-4">
+      <h2 className="font-medium">Пароль админки</h2>
+      <p className="mt-2 text-sm text-mist">Не короче 10 символов. После смены все, кто был залогинен, выйдут из админки.</p>
+      <div className="mt-4 grid gap-4 sm:grid-cols-3">
+        <div>
+          <label className="label">Текущий пароль</label>
+          <input type="password" autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} required className="admin-input" />
+        </div>
+        <div>
+          <label className="label">Новый пароль</label>
+          <input type="password" autoComplete="new-password" minLength={10} value={next} onChange={(e) => setNext(e.target.value)} required className="admin-input" />
+        </div>
+        <div>
+          <label className="label">Ещё раз</label>
+          <input type="password" autoComplete="new-password" minLength={10} value={repeat} onChange={(e) => setRepeat(e.target.value)} required className="admin-input" />
+        </div>
+      </div>
+      <div className="mt-4 flex items-center gap-3">
+        <button disabled={busy} className="admin-btn">
+          Сменить пароль
+        </button>
+        {msg && <p className={`text-sm ${msg.ok ? "text-moss-400" : "text-red-400"}`}>{msg.text}</p>}
+      </div>
+    </form>
   );
 }

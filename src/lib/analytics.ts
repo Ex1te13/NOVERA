@@ -1,4 +1,5 @@
 import { dbAll, dbGet } from "./db";
+import { siteHost } from "./referrer";
 
 export type { Period } from "./periods";
 export { PERIODS } from "./periods";
@@ -44,31 +45,27 @@ export async function analyticsSummary(period: string) {
   const leads = await count("SELECT COUNT(*) c FROM leads WHERE created_at BETWEEN ? AND ?", start, end);
   const ev = (type: string) => count("SELECT COUNT(*) c FROM events WHERE type = ? AND created_at BETWEEN ? AND ?", type, start, end);
 
-  const sources = await dbAll<{ source: string; visits: number; uniques: number }>(
-    `SELECT
-         CASE
+  const ownSite = `%//${siteHost()}%`;
+  const sourceSql = `CASE
            WHEN referral_code != '' THEN 'ref:' || referral_code
            WHEN utm LIKE '%utm_source%' THEN 'utm:' || COALESCE(json_extract(utm, '$.utm_source'), '?')
-           WHEN referrer != '' THEN referrer
+           WHEN referrer != '' AND referrer NOT LIKE ? THEN referrer
            ELSE 'direct'
-         END AS source,
+         END`;
+
+  const sources = await dbAll<{ source: string; visits: number; uniques: number }>(
+    `SELECT ${sourceSql} AS source,
          COUNT(*) visits,
          COUNT(DISTINCT visitor_id) uniques
        FROM visits WHERE created_at BETWEEN ? AND ?
        GROUP BY source ORDER BY visits DESC LIMIT 15`,
-    [start, end]
+    [ownSite, start, end]
   );
 
   const leadSources = await dbAll<{ source: string; leads: number }>(
-    `SELECT
-         CASE
-           WHEN referral_code != '' THEN 'ref:' || referral_code
-           WHEN utm LIKE '%utm_source%' THEN 'utm:' || COALESCE(json_extract(utm, '$.utm_source'), '?')
-           WHEN referrer != '' THEN referrer
-           ELSE 'direct'
-         END AS source, COUNT(*) leads
+    `SELECT ${sourceSql} AS source, COUNT(*) leads
        FROM leads WHERE created_at BETWEEN ? AND ? GROUP BY source`,
-    [start, end]
+    [ownSite, start, end]
   );
   const leadMap = new Map(leadSources.map((l) => [l.source, l.leads]));
 
