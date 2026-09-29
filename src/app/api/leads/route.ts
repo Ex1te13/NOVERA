@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import fs from "node:fs";
 import path from "node:path";
 import { dbAll, dbRun, uploadDir, type LeadRow } from "@/lib/db";
@@ -87,23 +87,25 @@ export async function POST(req: NextRequest) {
     [now, visitor_id || "anon", session_id, JSON.stringify({ lead_id: id, source }), landing_page, referral_code]
   );
 
-  notifyLead({
-    id,
-    name,
-    phone,
-    email,
-    region,
-    services,
-    area,
-    description,
-    files: filesMeta,
-    calculator,
-    source,
-    referrer,
-    utm,
-    referral_code,
-    landing_page,
-  }).catch((e) => console.error("telegram", e));
+  after(() =>
+    notifyLead({
+      id,
+      name,
+      phone,
+      email,
+      region,
+      services,
+      area,
+      description,
+      files: filesMeta,
+      calculator,
+      source,
+      referrer,
+      utm,
+      referral_code,
+      landing_page,
+    }).catch((e) => console.error("telegram", e))
+  );
 
   return NextResponse.json({ ok: true, id });
 }

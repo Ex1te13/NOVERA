@@ -46,8 +46,9 @@ export function Settings() {
             Откройте <a href="https://t.me/BotFather" target="_blank" className="text-moss-400 underline">@BotFather</a>, команда <code>/newbot</code>, скопируйте токен.
           </li>
           <li>Вставьте токен ниже и сохраните.</li>
+          <li>Нажмите «Подключить webhook».</li>
           <li>
-            Напишите боту <code>/start</code> — chat id сохранится автоматически (через webhook на публичном сервере или через <code>npm run bot</code> локально).
+            Менеджер пишет боту <code>/start</code> — его chat id сохранится автоматически. Чтобы сменить менеджера, очистите Chat ID, сохраните и попросите нового менеджера отправить <code>/start</code>.
           </li>
           <li>Нажмите «Тестовое сообщение» — оно должно прийти в Telegram.</li>
         </ol>
@@ -80,7 +81,7 @@ export function Settings() {
           </button>
         </div>
         <p className="mt-3 text-xs text-mist">
-          Webhook: <code>{s?.siteUrl}/api/telegram/webhook</code>. Для localhost используйте <code>npm run bot</code> (long polling).
+          Webhook: <code>{s?.siteUrl}/api/telegram/webhook</code>. <code>npm run bot</code> на компьютере отключает этот webhook — после него нажмите «Подключить webhook» снова.
         </p>
       </div>
 

@@ -1,6 +1,7 @@
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { getSetting } from "./db";
+import { getSetting, uploadDir } from "./db";
 import { formatMoney } from "./calculator";
 
 export type LeadPayload = {
@@ -46,7 +47,17 @@ async function tg(method: string, body: unknown, token?: string) {
 }
 
 export const telegramGetMe = (token: string) => fetch(`https://api.telegram.org/bot${token}/getMe`).then((r) => r.json());
-export const telegramSetWebhook = (token: string, url: string) => tg("setWebhook", { url }, token);
+/** Telegram присылает это значение в заголовке X-Telegram-Bot-Api-Secret-Token, чужие запросы его не знают. */
+export function telegramWebhookSecret(token: string) {
+  return crypto
+    .createHash("sha256")
+    .update(`${process.env.SESSION_SECRET || "novera"}:${token}`)
+    .digest("hex")
+    .slice(0, 48);
+}
+
+export const telegramSetWebhook = (token: string, url: string) =>
+  tg("setWebhook", { url, secret_token: telegramWebhookSecret(token), allowed_updates: ["message"] }, token);
 export const telegramDeleteWebhook = (token: string) => tg("deleteWebhook", {}, token);
 
 export async function sendTelegramText(text: string, overrideChat?: string) {
@@ -59,7 +70,7 @@ export async function sendTelegramText(text: string, overrideChat?: string) {
 export async function sendTelegramDocument(filePath: string, caption?: string) {
   const { token, chatId } = await creds();
   if (!token || !chatId) return { ok: false, skipped: true };
-  const abs = path.isAbsolute(filePath) ? filePath : path.join(process.cwd(), filePath);
+  const abs = path.isAbsolute(filePath) ? filePath : path.join(uploadDir, path.basename(filePath));
   if (!fs.existsSync(abs)) return { ok: false, missing: true };
   const buf = fs.readFileSync(abs);
   const form = new FormData();
